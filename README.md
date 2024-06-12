@@ -22,21 +22,21 @@ Gather insights from the analysis and with visualizations in the form of:
 
 ---
 
-## 📂 **STAGE 0: Data Preparation**
+## 📂 **STAGE 1: Data Preparation**
 
-Dataset yang digunakan adalah dataset sebuah perusahaan eCommerce Brasil yang memiliki informasi pesanan dengan jumlah 99441 dari tahun 2016 hingga 2018. Terdapat fitur-titur yang membuat informasi seperti status pemesanan, lokasi, rincian item, jenis pembayaran, serta ulasan.
+The dataset used is from a Brazilian eCommerce company that contains order information with a total of 99,441 entries from 2016 to 2018. There are features that provide information such as order status, location, item details, payment type, and reviews.
 
 ### **Create Database and ERD**
-**Langkah-langkah yang dilakukan meliputi:**
-1. Membuat workspace database di dalam pgAdmin dan membuat tabel menggunakan `CREATE TABLE` statement
-2. Melakukan import data csv kedalam database
-3. Menentukan Primary Key atau Foreign Key enggunakan statement `ALTER TABLE`
-4. Membuat dan mengeksport ERD (Entity Relationship Diagram) <br>
+**The steps involved include:**
+1)Creating a database workspace in pgAdmin and creating a table using the CREATE TABLE statement.
+2)Importing CSV data into the database.
+3)Setting a Primary Key or Foreign Key using the ALTER TABLE statement.
+4)Creating and exporting an ERD (Entity Relationship Diagram). <br>
 
-**Hasil ERD :** <br>
+**Schema:** <br>
 <p align="center">
-  <kbd><img src="asset/gambar_1_ERD.png" width=800px> </kbd> <br>
-  Gambar 1. Entity Relationship Diagram
+  <kbd><img src="Images/Schema.png" width=800px> </kbd> <br>
+  Schema
 </p>
 <br>
 <br>
@@ -46,156 +46,8 @@ Dataset yang digunakan adalah dataset sebuah perusahaan eCommerce Brasil yang me
 ## 📂 **STAGE 2: Data Analysis**
 
 ### **1. Annual Customer Activity Growth**
-Pertumbuhan aktivitas pelanggan tahunan dapat dianalisis dari Monthly active user (MAU), pelanggan baru, pelanggan dengan repeat order, dan rata-rata order oleh pelanggan.
 
-<details>
-  <summary>Click untuk melihat Queries</summary>
-  
-  ```sql
- --1 Menampilkan rata-rata jumlah customer aktif bulanan (monthly active user) untuk setiap tahun
-SELECT year, FLOOR(AVG(customer_total)) AS avg_mau
-FROM (
-	SELECT 
-		date_part('year', od.order_purchase_timestamp) AS year,
-		date_part('month', od.order_purchase_timestamp) AS month,
-		COUNT(DISTINCT cd.customer_unique_id) AS customer_total
-	FROM orders_dataset AS od
-	JOIN customers_dataset AS cd
-		ON cd.customer_id = od.customer_id
-	GROUP BY 1, 2
-	) AS sub
-GROUP BY 1
-ORDER BY 1
-;
-
---2 Menampilkan jumlah customer baru pada masing-masing tahun
-SELECT year, COUNT(customer_unique_id) AS total_new_customer
-FROM (
-	SELECT
-		Min(date_part('year', od.order_purchase_timestamp)) AS year,
-		cd.customer_unique_id
-	FROM orders_dataset AS od
-	JOIN customers_dataset AS cd
-		ON cd.customer_id = od.customer_id
-	GROUP BY 2
-	) AS sub
-GROUP BY 1
-ORDER BY 1
-;
-
---3 Menampilkan jumlah customer repeat order pada masing-masing tahun
-SELECT year, count(customer_unique_id) AS total_customer_repeat
-FROM (
-	SELECT
-		date_part('year', od.order_purchase_timestamp) AS year,
-		cd.customer_unique_id,
-		COUNT(od.order_id) AS total_order
-	FROM orders_dataset AS od
-	JOIN customers_dataset AS cd
-		ON cd.customer_id = od.customer_id
-	GROUP BY 1, 2
-	HAVING count(2) > 1
-	) AS sub
-GROUP BY 1
-ORDER BY 1
-;
-
---4 Menampilkan rata-rata jumlah order yang dilakukan customer untuk masing-masing tahun
-SELECT year, ROUND(AVG(freq), 3) AS avg_frequency
-FROM (
-	SELECT
-		date_part('year', od.order_purchase_timestamp) AS year,
-		cd.customer_unique_id,
-		COUNT(order_id) AS freq
-	FROM orders_dataset AS od
-	JOIN customers_dataset AS cd
-		ON cd.customer_id = od.customer_id
-	GROUP BY 1, 2
-	) AS sub
-GROUP BY 1
-ORDER BY 1
-;
-
---5 Menggabungkan ketiga metrik yang telah berhasil ditampilkan menjadi satu tampilan tabel
-WITH cte_mau AS (
-	SELECT year, FLOOR(AVG(customer_total)) AS avg_mau
-	FROM (
-		SELECT 
-			date_part('year', od.order_purchase_timestamp) AS year,
-			date_part('month', od.order_purchase_timestamp) AS month,
-			COUNT(DISTINCT cd.customer_unique_id) AS customer_total
-		FROM orders_dataset AS od
-		JOIN customers_dataset AS cd
-			ON cd.customer_id = od.customer_id
-		GROUP BY 1, 2
-		) AS sub
-	GROUP BY 1
-),
-
-cte_new_cust AS (
-	SELECT year, COUNT(customer_unique_id) AS total_new_customer
-	FROM (
-		SELECT
-			Min(date_part('year', od.order_purchase_timestamp)) AS year,
-			cd.customer_unique_id
-		FROM orders_dataset AS od
-		JOIN customers_dataset AS cd
-			ON cd.customer_id = od.customer_id
-		GROUP BY 2
-		) AS sub
-	GROUP BY 1
-),
-
-cte_repeat_order AS (
-	SELECT year, count(customer_unique_id) AS total_customer_repeat
-	FROM (
-		SELECT
-			date_part('year', od.order_purchase_timestamp) AS year,
-			cd.customer_unique_id,
-			COUNT(od.order_id) AS total_order
-		FROM orders_dataset AS od
-		JOIN customers_dataset AS cd
-			ON cd.customer_id = od.customer_id
-		GROUP BY 1, 2
-		HAVING count(2) > 1
-		) AS sub
-	GROUP BY 1
-),
-
-cte_frequency AS (
-	SELECT year, ROUND(AVG(freq), 3) AS avg_frequency
-	FROM (
-		SELECT
-			date_part('year', od.order_purchase_timestamp) AS year,
-			cd.customer_unique_id,
-			COUNT(order_id) AS freq
-		FROM orders_dataset AS od
-		JOIN customers_dataset AS cd
-			ON cd.customer_id = od.customer_id
-		GROUP BY 1, 2
-		) AS sub
-	GROUP BY 1
-)
-
-SELECT
-	mau.year AS year,
-	avg_mau,
-	total_new_customer,
-	total_customer_repeat,
-	avg_frequency
-FROM
-	cte_mau AS mau
-	JOIN cte_new_cust AS nc
-		ON mau.year = nc.year
-	JOIN cte_repeat_order AS ro
-		ON nc.year = ro.year
-	JOIN cte_frequency AS f
-		ON ro.year = f.year
-GROUP BY 1, 2, 3, 4, 5
-ORDER BY 1
-;
-  ```
-</details>
+The growth of annual customer activity can be analyzed from Monthly Active Users (MAU), new customers, repeat order customers, and the average order per customer.
 
 <p align="center">
 Tabel 1. Hasil Analisis Pertumbuhan Aktivitas Pelanggan Tahunan  <br>
