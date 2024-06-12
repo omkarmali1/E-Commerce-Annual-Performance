@@ -9,7 +9,7 @@
 
 ## 📂 **STAGE 0: Problem Statement**
 
-### **Background Story**
+### **Background**
 Measuring business performance is a very important aspect for a company. It helps in monitoring and evaluating the success or failure of various business processes. Business performance measurement can be carried out by considering several business metrics. In this project, an analysis of the business performance of an eCommerce company will be conducted using business metrics such as customer growth, product quality, and payment types based on historical data over a period of three years.
 
 ### **Objective**
@@ -26,12 +26,13 @@ Gather insights from the analysis and with visualizations in the form of:
 
 The dataset used is from a Brazilian eCommerce company that contains order information with a total of 99,441 entries from 2016 to 2018. There are features that provide information such as order status, location, item details, payment type, and reviews.
 
-### **Create Database and ERD**
+### **Create Database and Schema**
 **The steps involved include:**
-1)Creating a database workspace in pgAdmin and creating a table using the CREATE TABLE statement.
-2)Importing CSV data into the database.
-3)Setting a Primary Key or Foreign Key using the ALTER TABLE statement.
-4)Creating and exporting an ERD (Entity Relationship Diagram). <br>
+<br>
+1)Creating a database workspace in pgAdmin and creating a table using the CREATE TABLE statement.<br>
+2)Importing CSV data into the database.<br>
+3)Setting a Primary Key or Foreign Key using the ALTER TABLE statement.<br>
+4)Creating, exporting an ERD (Entity Relationship Diagram) and forming Schema. <br>
 
 **Schema:** <br>
 <p align="center">
@@ -117,7 +118,7 @@ The payment types used by customers can be analyzed based on their favorite paym
 
 <p align="center">
   Table 3. Analysis Results of Payment Types Used by Customers <br>
-  <kbd><img src="asset/payment.png" width=600px> </kbd> <br>
+  <kbd><img src="Images/Payment_mat.png" width=600px> </kbd> <br>
 </p>
 
 <br>
