@@ -50,161 +50,67 @@ The dataset used is from a Brazilian eCommerce company that contains order infor
 The growth of annual customer activity can be analyzed from Monthly Active Users (MAU), new customers, repeat order customers, and the average order per customer.
 
 <p align="center">
-Tabel 1. Hasil Analisis Pertumbuhan Aktivitas Pelanggan Tahunan  <br>
-  <kbd><img src="asset/activity.png" width=800px> </kbd> <br>
+Tabel 1. Analysis Results of Annual Customer Activity Growth  <br>
+  <kbd><img src="Images/Cust_growth_mat.png" width=800px> </kbd> <br>
 </p>
 
 <br>
+Overall, the company experienced an increase in Monthly Active Users and new customers every year. A significant increase occurred from 2016 to 2017, as transaction data in 2016 began in September <br>
 <p align="center">
-  <kbd><img src="asset/gambar_2_mau_x_newcust.png" width=600px> </kbd> <br>
-  Gambar 2. Grafik Rata-rata MAU dan Pelanggan Baru
+  <kbd><img src="Images/ACAGA_tot_new_cust.png" width=600px> </kbd> <br>
+  Fig 1. Average MAU and New Customers Graph
 </p>
 
-Secara keseluruhan perusahaan mengalami peningkakatan Monthly Active User serta pelanggan baru setiap tahunnya. Peningkatan yang signifikan terjadi pada tahun 2016 ke 2017, hal ini dikarenakan data transaksi pada tahun 2016 dimulai pada bulan September. <br>
-<br>
-<br>
 
+<br>
+<br>
+A significant increase also occurred in the number of customers who placed repeat orders from 2016 to 2017. However, there was a slight decrease in 2018.<br>
 <p align="center">
-  <kbd><img src="asset/gambar_3_repeat order.png" width=600px> </kbd> <br>
-  Gambar 3. Grafik Jumlah Pelanggan yang Melakukan Repeat Order
+  <kbd><img src="Images/ACAGA_repeat_order_cust.png" width=600px> </kbd> <br>
+  Image 2. Graph of the Number of Customers Who Make Repeat Orders
 </p>
 
-Peningkatan yang signifikan juga terjadi pada jumlah pelanggan yang melakukan repeat order pada tahun 2016 hingga 2017. Namun pada tahun 2018 mengalami sedikit penurunan. <br>
 <br>
 <br>
 
-
+From the analysis and the graph below, it can be observed that the average number of customers each year tends to only place orders once, indicating that the majority of customers do not place repeat orders..<br>
 <p align="center">
-  <kbd><img src="asset/gambar_4_freq_order.png" width=600px> </kbd> <br>
-  Gambar 4. Grafik Rata-rata Frekuensi Order Pelanggan
+  <kbd><img src="Images/ACAGA_freq_cust_order.png" width=600px> </kbd> <br>
+  Fig 3. Average Frequency of Customer Orders
 </p>
 
-Dari analisis dan grafik diatas dapat diketahui bahwa rata-rata pelanggan setiap tahunnya cenderung hanya melakukan order satu kali, artinya mayoritas pelanggan tidak melakukan repeat order.<br>
+
 <br>
 
 ### **2. Annual Product Category Quality**
 
-Kualitas kategori produk tahunan dapat dianalisis dari total pendapatan, total pembatalan pesanan, kategori top produk dan kategori produk yang paling banyak dibatalkan.
+The annual product category quality can be analyzed based on total revenue, total order cancellations, top product categories, and categories with the highest cancellation rates.
 
-<details>
-  <summary>Click disini untuk melihat Queries</summary>
-
-  ```sql
- --1) Membuat tabel yang berisi informasi pendapatan/revenue perusahaan total untuk masing-masing tahun
-CREATE TABLE total_revenue AS
-	SELECT
-		date_part('year', od.order_purchase_timestamp) AS year,
-		SUM(oid.price + oid.fright_value) AS revenue
-	FROM order_items_dataset AS oid
-	JOIN orders_dataset AS od
-		ON oid.order_id = od.order_id
-	WHERE od.order_status like 'delivered'
-	GROUP BY 1
-	ORDER BY 1;
-
---2) Membuat tabel yang berisi informasi jumlah cancel order total untuk masing-masing tahun
-CREATE TABLE canceled_order AS
-	SELECT
-		date_part('year', order_purchase_timestamp) AS year,
-		COUNT(order_status) AS canceled
-	FROM orders_dataset
-	WHERE order_status like 'canceled'
-	GROUP BY 1
-	ORDER BY 1;
-		
---3) Membuat tabel yang berisi nama kategori produk yang memberikan pendapatan total tertinggi untuk masing-masing tahun
-CREATE TABLE top_product_category AS
-	SELECT 
-		year,
-		top_category,
-		product_revenue
-	FROM (
-		SELECT
-			date_part('year', shipping_limit_date) AS year,
-			pd.product_category_name AS top_category,
-			SUM(oid.price + oid.fright_value) AS product_revenue,
-			RANK() OVER (PARTITION BY date_part('year', shipping_limit_date)
-					 ORDER BY SUM(oid.price + oid.fright_value) DESC) AS ranking
-		FROM orders_dataset AS od 
-		JOIN order_items_dataset AS oid
-			ON od.order_id = oid.order_id
-		JOIN product_dataset AS pd
-			ON oid.product_id = pd.product_id
-		WHERE od.order_status like 'delivered'
-		GROUP BY 1, 2
-		ORDER BY 1
-		) AS sub
-	WHERE ranking = 1;
-	
---4) Membuat tabel yang berisi nama kategori produk yang memiliki jumlah cancel order terbanyak untuk masing-masing tahun
-CREATE TABLE most_canceled_category AS
-	SELECT 
-		year,
-		most_canceled,
-		total_canceled
-	FROM (
-		SELECT
-			date_part('year', shipping_limit_date) AS year,
-			pd.product_category_name AS most_canceled,
-			COUNT(od.order_id) AS total_canceled,
-			RANK() OVER (PARTITION BY date_part('year', shipping_limit_date)
-					 ORDER BY COUNT(od.order_id) DESC) AS ranking
-		FROM orders_dataset AS od 
-		JOIN order_items_dataset AS oid
-			ON od.order_id = oid.order_id
-		JOIN product_dataset AS pd
-			ON oid.product_id = pd.product_id
-		WHERE od.order_status like 'canceled'
-		GROUP BY 1, 2
-		ORDER BY 1
-		) AS sub
-	WHERE ranking = 1;
-	
--- Tambahan - Menghapus anomali data tahun
-DELETE FROM top_product_category WHERE year = 2020;
-DELETE FROM most_canceled_category WHERE year = 2020;
-
--- Menampilkan tabel yang dibutuhkan
-SELECT 
-	tr.year,
-	tr.revenue AS total_revenue,
-	tpc.top_category AS top_product,
-	tpc.product_revenue AS total_revenue_top_product,
-	co.canceled total_canceled,
-	mcc.most_canceled top_canceled_product,
-	mcc.total_canceled total_top_canceled_product
-FROM total_revenue AS tr
-JOIN top_product_category AS tpc
-	ON tr.year = tpc.year
-JOIN canceled_order AS co
-	ON tpc.year = co.year
-JOIN most_canceled_category AS mcc
-	ON co.year = mcc.year
-GROUP BY 1, 2, 3, 4, 5, 6, 7;
-  ```
-</details>
 
 <p align="center">
-  Tabel 2. Hasil Analisis Total Kategori Produk Tahunan <br>
+  Tabel 2. The Result of Annual Product Category Analysis <br>
   <kbd><img src="asset/produk.png" width=1000px> </kbd> <br>
 </p>
 
 <br>
+
+Overall, the company's revenue increases every year.. <br>
+<br>
 <p align="center">
   <kbd><img src="asset/gambar_5_total_revenue.png" width=600px> </kbd> <br>
-  Gambar 5. Grafik Total Revenue Pertahun
+Fig . Total Revenue Per Year
 </p>
 
-Secara keseluruhan revenue perusahaan meningkat setiap tahun. <br>
-<br>
+
 <br>
 
 <p align="center">
   <kbd><img src="asset/gambar_6_top.png" width=600px> </kbd> <br>
-  Gambar 6. Grafik Total Revenue Top Produk Pertahun
+  
+fig 5. Total Revenue Top Products Graph Per Year
 </p>
 
-Revenue yang dihasilkan dari top produk juga meningkat untuk setiap tahunnya. Selain itu setiap tahunnya memiliki jenis kategori top produk yang berbeda. Pada tahun 2018, perusahaan menghasilkan revenue paling tinggi dengan jenis karegori top produk kesehatan dan kecantikan (`health_beauty`). <br>
+The revenue generated from the top products also increases for each year. Additionally, each year has a different top product category. In 2018, the company generated the highest revenue with the top product category of health and beauty. <br>
 <br>
 <br>
 
